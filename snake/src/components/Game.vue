@@ -9,20 +9,10 @@
     name: 'Game',
     data() {
       return {
-        snake: [{
-            x: 9 * 20,
-            y: 10 * 20
-          },
-          {
-            x: 8 * 20,
-            y: 10 * 20
-          },
-          {
-            x: 7 * 20,
-            y: 10 * 20
-          }
-        ],
+        snake: [{x: 100, y: 100}],
         direction: '',
+        food: [],
+        total: 1,
         startGame: false
       }
     },
@@ -50,15 +40,58 @@
         canvas.setAttribute('width', style_width * dpi);
       },
 
-      //draw the game
-      draw() {
+      drawSnake() {
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
-        for (let i = 0; i < this.snake.length; i++) {
-          context.fillStyle = ( i == 0 ) ? "green" : "gray";
+        for (let i = 0; i < this.total; i++) {
+          //colors the snake
+          context.fillStyle = "green"
           context.fillRect(this.snake[i].x, this.snake[i].y, 20, 20)
         }
-        //head of the snake
+        context.fillRect(this.snake[0].x, this.snake[0].y, 20, 20)
+      },
+      
+      spawnFood() {
+        this.food = []
+        let newFood = {
+          x: (Math.floor(Math.random() * (1200 / 20) - 1) + 1) * 20,
+          y: (Math.floor(Math.random() * (1200 / 20) - 1) + 1) * 20
+        }
+        this.food.push(newFood)
+      },
+
+      drawFruit() {
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        context.fillStyle = "red";
+        context.fillRect(this.food[0].x, this.food[0].y, 20, 20);
+      },
+
+      //directions
+      directions(event) {
+        this.startGame = true
+        //event.keyCode 37 - 40
+        if (event.keyCode == 37 && this.direction !== 'right') {
+          this.direction = 'left'
+        } else if (event.keyCode == 38 && this.direction !== 'down') {
+          this.direction = 'up'
+        } else if (event.keyCode == 39 && this.direction !== 'left') {
+          this.direction = 'right'
+        } else if (event.keyCode == 40 && this.direction !== 'up') {
+          this.direction = 'down'
+        }
+      },
+
+      collision(head, array) {
+        for (let i = 0; i < array.length; i++) {
+          if (head[0] === array[i][0] && head[1] === array[i][1]) {
+            return true;
+          }
+        }
+        return false;
+      },
+
+      snakeHeadPosition() {
         let snakeX = this.snake[0].x;
         let snakeY = this.snake[0].y;
 
@@ -75,47 +108,60 @@
           snakeY += 20
         }
 
-        //remove tail
-        this.snake.pop();
-
-        //add new head
         let newHead = {
           x: snakeX,
           y: snakeY
         }
+
         this.snake.unshift(newHead);
-
-
-        setInterval(this.draw, 1000)
       },
 
-      //directions
-      directions(event) {
-        this.startGame = true
-        //event.keyCode 37 - 40
-        if (event.keyCode == 37) {
-          this.direction = 'left'
-        } else if (event.keyCode == 38) {
-          this.direction = 'up'
-        } else if (event.keyCode == 39) {
-          this.direction = 'right'
-        } else if (event.keyCode == 40) {
-          this.direction = 'down'
+      //draw the game
+      draw() {
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.width)
+        this.drawSnake()
+        this.snakeHeadPosition()
+        this.drawFruit()
+        //if snake eats the food do not remove tail, else do remove
+        if (this.snake[0].x === this.food[0].x && this.snake[0].y === this.food[0].y) {
+          this.total++
+          for(let i = 0; i < this.snake.length; i++) {
+            this.snake[i] = this.snake[i + 1]
+          }
+          this.snake[this.total - 1] = {x: this.x, y: this.y}
+          this.spawnFood()
+        } else {
+          //remove tail
+          this.snake.pop();
         }
-      },
+      
+        //game over // boundaries collision
+
+        
+
+        let game = setInterval(this.draw, 200)
+        setTimeout(function () {
+          clearInterval(game);
+        }, 200)
+      }
     },
     mounted() {
       //draw the snake
       this.fix_dpi()
       document.addEventListener('keydown', this.directions)
+      this.drawSnake()
+      this.spawnFood()
+      this.drawFruit()
     }
   }
 </script>
 
 <style scoped>
   #canvas {
-    width: 99vmin;
-    height: 99vmin;
+    width: 1200px;
+    height: 1200px;
     border: 1px solid black;
     background: gray;
   }
